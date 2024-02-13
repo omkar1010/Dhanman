@@ -1,0 +1,109 @@
+<form onSubmit={handleSubmit(onSubmit)}>
+        <div className="field">
+          <label className="label">Date</label>
+          <div className="control">
+            <Controller
+              name="dispatchDate"
+              control={control}
+              defaultValue=""
+              render={({ field }) => <input {...field} type="date" />}
+            />
+            {errors.dispatchDate && (
+              <p className="help is-danger">{errors.dispatchDate.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">Customer Name</label>
+          <div className="control">
+            <Autosuggest
+              suggestions={customerSuggestions}
+              onSuggestionsFetchRequested={({ value }) =>
+                handleCustomerSearch(value)
+              }
+              onSuggestionsClearRequested={() => setCustomerSuggestions([])}
+              getSuggestionValue={getSuggestionValue}
+              renderSuggestion={renderSuggestion}
+              inputProps={inputProps}
+              onSuggestionSelected={(_, { suggestion }) =>
+                handleCustomerSelect(suggestion)
+              }
+            />
+            {errors.cust_name && (
+              <p className="help is-danger">{errors.cust_name.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">Product Name</label>
+          <div className="control">
+            <select
+              className={`select ${errors.prod_name ? "is-danger" : ""}`}
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+            >
+              <option value="">Select Product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.prod_name}>
+                  {product.prod_name}
+                </option>
+              ))}
+            </select>
+            {errors.prod_name && (
+              <p className="help is-danger">{errors.prod_name.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">Dispatch Quantity</label>
+          <div className="control">
+            <Controller
+              name="dispatchQuantity"
+              control={control}
+              defaultValue=""
+              render={({ field }) => <input {...field} type="number" />}
+            />
+            {errors.dispatchQuantity && (
+              <p className="help is-danger">
+                {errors.dispatchQuantity.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <div className="control">
+            <button type="submit" className="button is-success">
+              Add Dispatch
+            </button>
+          </div>
+        </div>
+      </form>
+
+
+
+      <div className="mt-5">
+        <table className="table is-fullwidth">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Customer Name</th>
+              <th>Product Name</th>
+              <th>Dispatch Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dispatchedProducts.map((product, index) => (
+              <tr key={index}>
+                <td>{product.dispatchDate}</td>
+                <td>{product.cust_name}</td>
+                <td>{product.prod_name}</td>
+                <td>{product.dispatchQuantity}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>

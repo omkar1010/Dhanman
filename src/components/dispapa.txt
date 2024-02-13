@@ -1,0 +1,599 @@
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { getMe } from "../features/authSlice";
+import axios from "axios";
+import Autosuggest from "react-autosuggest";
+import { CSVLink } from "react-csv";
+
+const schema = yup.object().shape({
+  dispatchDate: yup.date().required("Date is required"),
+  customerName: yup.string().required("Customer Name is required"),
+  productName: yup.string().required("Product Name is required"),
+  dispatchQuantity: yup
+    .number()
+    .typeError("Dispatch Quantity must be a valid number")
+    .required("Dispatch Quantity is required"),
+});
+
+const DispatchPage = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, isError } = useSelector((state) => state.auth);
+  const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [dispatches, setDispatches] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [currentProductId, setCurrentProductId] = useState("");
+  const [customerSuggestions, setCustomerSuggestions] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [filteredDispatch, setFilteredDisaptch] = useState([]);
+
+  useEffect(() => {
+    dispatch(getMe());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isError) {
+      navigate("/");
+    }
+    if (user && user.role !== "dispatch" && user.role !== "admin") {
+      navigate("/dashboard");
+    }
+  }, [isError,user, navigate]);
+
+  const fetchData = async () => {
+    try {
+      // Fetch products data including associated customer and product names
+      const response = await axios.get("http://localhost:5000/dispatch", {
+        params: { includeNames: true }, // Include associated names in the response
+      });
+  
+      // Set the products data
+      const sortedData = response.data.sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+  
+      // Add customer and product names to filtered products
+      const filteredData = sortedData.map((product) => ({
+        ...product,
+        cust_name: product?.MS_CustomerModel?.cust_name || "N/A",
+        prod_name: product?.MS_Product?.prod_name || "N/A",
+      }));
+  
+      setProducts(sortedData);
+      setIsLoaded(true);
+      setFilteredDisaptch(filteredData);
+  
+      // Set selected customer and product names for editing
+      if (isEditing && currentProductId) {
+        const currentProduct = filteredData.find(
+          (product) => product.id === currentProductId
+        );
+        setSelectedCustomer(currentProduct?.cust_name || "");
+        setSelectedProduct(currentProduct?.prod_name || "");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  
+
+
+  const {
+    handleSubmit,
+    control,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
+
+  useEffect(() => {
+    fetchCustomers();
+    fetchProducts();
+    fetchDispatches();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/customers");
+      setCustomers(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/products");
+      setProducts(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const fetchDispatches = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/dispatches");
+      setDispatches(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleCustomerSearch = (value) => {
+    const inputValue = value.trim().toLowerCase();
+    const customerSuggestions = customers.filter((customer) =>
+      customer.customer_name.toLowerCase().startsWith(inputValue)
+    );
+    setCustomerSuggestions(customerSuggestions);
+    setSelectedCustomer(value);
+  };
+
+  const handleCustomerSelect = (customer) => {
+    setSelectedCustomer(customer.customer_name);
+  };
+
+  const handleProductSelect = (product) => {
+    setSelectedProduct(product.prod_name);
+  };
+
+  const handleCustomerChange = (event, { newValue }) => {
+    setSelectedCustomer(newValue);
+  };
+
+  const getSuggestionValue = (customer) => {
+    return customer.customer_name;
+  };
+
+  const renderSuggestion = (customer) => {
+    return <div>{customer.customer_name}</div>;
+  };
+
+  const inputProps = {
+    placeholder: "Search Customer",
+    value: selectedCustomer,
+    onChange: handleCustomerChange,
+  };
+
+  const onSubmit = async (data) => {
+    try {
+      data.customerName = selectedCustomer;
+      data.productName = selectedProduct;
+
+      // Assuming you have a dispatch create endpoint on the backend
+      await axios.post("http://localhost:5000/dispatches", data);
+
+      reset();
+      setSelectedCustomer("");
+      setSelectedProduct("");
+
+      // Add success notification or redirection as per your application's requirement
+      console.log("Dispatch created successfully!");
+
+      // Fetch the updated dispatch list after creating the new dispatch
+      fetchDispatches();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  
+  const handleDeleteDispatch = async (id) => {
+    try {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this dispatch ?"
+      );
+      if (confirmDelete) {
+        await axios.delete(`http://localhost:5000/dispatches/${id}`);
+        setIsLoaded(false);
+        fetchData();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleEditDispatch = (dispatch) => {
+    reset({
+      cust_name: dispatch.cust_name,
+      prod_name: dispatch.prod_name,
+      gradeId: dispatch.gradeId,
+      No_of_casting_in_mould: dispatch.No_of_casting_in_mould,
+      Casting_Weight: dispatch.Casting_Weight,
+    });
+
+    setSelectedCustomer(dispatch.cust_name);
+    setSelectedProduct(dispatch.prod_name);
+
+    setCurrentProductId(dispatch.id);
+
+    setIsEditing(true);
+  };
+
+  const handleExportCSV = () => {
+    const csvData = filteredDispatch.map((dispatch) => ({
+      "Customer Name": dispatch.cust_name,
+      "Product Name": dispatch.prod_name,
+      "Grade Name": dispatch?.MS_Grade?.Grade_Name || "N/A",
+      "Number Of Casting Mould Poure": dispatch.No_of_casting_in_mould,
+      "Casting Weight": dispatch.Casting_Weight,
+      "Created At": new Date(dispatch.createdAt).toLocaleDateString(),
+    }));
+
+    const headers = [
+      { label: "Customer Name", key: "Customer Name" },
+      { label: "Product Name", key: "Product Name" },
+      { label: "Grade Name", key: "Grade Name" },
+      { label: "Number Of Casting Mould Poure", key: "Number Of Casting Mould Poure" },
+      { label: "Casting Weight", key: "Casting Weight" },
+      { label: "Created At", key: "Created At" },
+    ];
+
+
+    const handleEditDispatch = (dispatch) => {
+      reset({
+        cust_name: dispatch.cust_name,
+        prod_name: dispatch.prod_name,
+        gradeId: dispatch.gradeId,
+        No_of_casting_in_mould: dispatch.No_of_casting_in_mould,
+        Casting_Weight: dispatch.Casting_Weight,
+      });
+  
+      setSelectedCustomer(dispatch.cust_name);
+      setSelectedProduct(dispatch.prod_name);
+  
+      setCurrentProductId(dispatch.id);
+  
+      setIsEditing(true);
+    };
+
+    return (
+      <div className="export-csv-container">
+        <CSVLink
+          data={csvData}
+          headers={headers}
+          filename={"customers.csv"}
+          className="button is-primary"
+        >
+          Export as CSV
+        </CSVLink>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="hero-body">
+        <div className="container">
+          <div className="columns is-centered">
+            <div className="column is-6">
+              {/* Product Form */}
+              <form
+                className="p-8 rounded-s-md"
+                style={{ backgroundColor: "#CAFFF0" }}
+                onSubmit={handleSubmit(onSubmit)}
+              >
+                <h2
+                  className="text-center m-5 text-header-add"
+                  style={{
+                    color: "#006A4D",
+                    fontFamily: "Inter",
+                    fontSize: "28px",
+                  }}
+                >
+                  Dispatch
+                </h2>
+
+                           {/* Date */}
+            <div className="field">
+              <label className="label">Date</label>
+              <Controller
+                name="dispatchDate"
+                control={control}
+                render={({ field }) => <input {...field} type="date" className="input" />}
+              />
+              {errors.dispatchDate && (
+                <p className="help is-danger">{errors.dispatchDate.message}</p>
+              )}
+            </div>
+
+            {/* Customer Name */}
+            <div className="field">
+              <label className="label">Customer Name</label>
+              <Autosuggest
+                suggestions={customerSuggestions}
+                onSuggestionsFetchRequested={({ value }) =>
+                  handleCustomerSearch(value)
+                }
+                onSuggestionsClearRequested={() => setCustomerSuggestions([])}
+                getSuggestionValue={getSuggestionValue}
+                renderSuggestion={renderSuggestion}
+                inputProps={{
+                  placeholder: "Search Customer",
+                  value: selectedCustomer,
+                  onChange: handleCustomerChange,
+                  className: "input",
+                }}
+                onSuggestionSelected={(_, { suggestion }) =>
+                  handleCustomerSelect(suggestion)
+                }
+              />
+              {errors.customerName && (
+                <p className="help is-danger">{errors.customerName.message}</p>
+              )}
+            </div>
+
+            {/* Product Name */}
+            <div className="field">
+              <label className="label">Product Name</label>
+              <Autosuggest
+                suggestions={products}
+                onSuggestionsFetchRequested={({ value }) =>
+                  setProducts(
+                    products.filter((product) =>
+                      product.prod_name.toLowerCase().startsWith(value)
+                    )
+                  )
+                }
+                onSuggestionsClearRequested={() => setProducts([])}
+                getSuggestionValue={(product) => product.prod_name}
+                renderSuggestion={(product) => <div>{product.prod_name}</div>}
+                inputProps={{
+                  placeholder: "Search Product",
+                  value: selectedProduct,
+                  onChange: (_, { newValue }) => setSelectedProduct(newValue),
+                  className: "input",
+                }}
+                onSuggestionSelected={(_, { suggestion }) =>
+                  handleProductSelect(suggestion)
+                }
+              />
+              {errors.productName && (
+                <p className="help is-danger">{errors.productName.message}</p>
+              )}
+            </div>
+
+            {/* Dispatch Quantity */}
+            <div className="field">
+              <label className="label">Dispatch Quantity</label>
+              <Controller
+                name="dispatchQuantity"
+                control={control}
+                render={({ field }) => <input {...field} type="number" className="input" />}
+              />
+              {errors.dispatchQuantity && (
+                <p className="help is-danger">
+                  {errors.dispatchQuantity.message}
+                </p>
+              )}
+            </div>
+
+                <center>
+                  <div className="field">
+                    <div className="control">
+                      <button type="submit" className="button is-success">
+                        {isEditing ? "Update" : "Add"}
+                      </button>
+                    </div>
+                  </div>
+                </center>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Customer List */}
+      <div className="container mt-5">
+        {/* Date Filter */}
+        <div className="date-filter-container">
+          <div
+            className="field"
+            style={{
+              padding: "10px",
+              justifyContent: "space-between",
+              alignItems: "center",
+              display: "flex",
+            }}
+          >
+            <div className="w-auto" style={{ display: "flex", gap: "10px" }}>
+              <div className="field">
+                <label className="label">Start Date:</label>
+                <div className="control">
+                  <input
+                    type="date"
+                    className="input"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label className="label">End Date:</label>
+                <div className="control">
+                  <input
+                    type="date"
+                    className="input"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              {/* <div className="field">
+                      <div className="control">
+                        <button
+                          className="button is-primary"
+                          onClick={handleDateFilter}
+                        >
+                          Filter
+                        </button>
+                      </div>
+                    </div> */}
+            </div>
+            {/* Export CSV Button */}
+            {handleExportCSV()}
+          </div>
+        </div>
+        <table className="table is-striped is-fullwidth">
+          <thead>
+            <tr>
+              <th>Sr.No</th>
+              <th>Customer Name</th>
+              <th>Product Name</th>
+              <th>Dispatch Quantity</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoaded ? (
+              filteredDispatch.map((dispatch, index) => {
+                const createdAtDate = new Date(
+                  dispatch.createdAt
+                ).toLocaleDateString(); // Extract the date and format it
+
+                return (
+                  <tr key={index}>
+                    <td>{index + 1}</td>
+                    <td>{dispatch.cust_name}</td>
+                    <td>{dispatch.prod_name}</td>
+                    <td>{dispatch?.MS_Grade?.Grade_Name || "N/A"}</td>
+                    <td>{dispatch.No_of_casting_in_mould}</td>
+                    <td>{dispatch.Casting_Weight}</td>
+                    <td>{createdAtDate}</td> {/* Display the formatted date */}
+                    <td>
+                      {user && (
+                        <>
+                          {user.role === "admin" || user.role === "dispatch" ? (
+                            <>
+                              <button
+                                onClick={() => handleEditDispatch(dispatch)}
+                                className="edit-button ml-1"
+                              >
+                                <i className="fi fi-rr-edit"></i>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDispatch(dispatch.id)}
+                                className="delete-button"
+                              >
+                                <i className="fi fi-rs-trash"></i>
+                              </button>
+                            </>
+                          ) : (
+                            <span>No actions</span>
+                          )}
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="8">Loading...</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+
+export default DispatchPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+        <div className="field">
+          <label className="label">Date</label>
+          <div className="control">
+            <Controller
+              name="dispatchDate"
+              control={control}
+              defaultValue=""
+              render={({ field }) => <input {...field} type="date" />}
+            />
+            {errors.dispatchDate && (
+              <p className="help is-danger">{errors.dispatchDate.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">Customer Name</label>
+          <div className="control">
+            <Autosuggest
+              suggestions={customerSuggestions}
+              onSuggestionsFetchRequested={({ value }) =>
+                handleCustomerSearch(value)
+              }
+              onSuggestionsClearRequested={() => setCustomerSuggestions([])}
+              getSuggestionValue={getSuggestionValue}
+              renderSuggestion={renderSuggestion}
+              inputProps={inputProps}
+              onSuggestionSelected={(_, { suggestion }) =>
+                handleCustomerSelect(suggestion)
+              }
+            />
+            {errors.cust_name && (
+              <p className="help is-danger">{errors.cust_name.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">Product Name</label>
+          <div className="control">
+            <select
+              className={`select ${errors.prod_name ? "is-danger" : ""}`}
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+            >
+              <option value="">Select Product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.prod_name}>
+                  {product.prod_name}
+                </option>
+              ))}
+            </select>
+            {errors.prod_name && (
+              <p className="help is-danger">{errors.prod_name.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="label">Dispatch Quantity</label>
+          <div className="control">
+            <Controller
+              name="dispatchQuantity"
+              control={control}
+              defaultValue=""
+              render={({ field }) => <input {...field} type="number" />}
+            />
+            {errors.dispatchQuantity && (
+              <p className="help is-danger">
+                {errors.dispatchQuantity.message}
+              </p>
+            )}
+          </div>
+        </div>

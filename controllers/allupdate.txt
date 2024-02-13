@@ -1,0 +1,163 @@
+import MS_CustomerModel from "../models/MS_CustomerModel.js";
+import MS_Product from "../models/MS_Product.js";
+import MS_Grade from "../models/MS_Grade.js";
+import Customers from "../models/CustomerModel.js";
+import TR_Product_Registration from "../models/TR_Product_Registration.js";
+
+export const getProducts = async (req, res) => {
+  try {
+    const { includeNames } = req.query;
+
+    // Fetch products data
+    let products;
+    if (includeNames) {
+      products = await TR_Product_Registration.findAll({
+        include: [
+          {
+            model: MS_CustomerModel,
+            attributes: ["comp_name"],
+            as: "customer",
+          }, // Use 'comp_name' and set an alias
+          { model: MS_Product, attributes: ["prod_name"] },
+          { model: MS_Grade },
+        ],
+      });
+    } else {
+      products = await TR_Product_Registration.findAll();
+    }
+
+    res.json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getProductById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Find the product based on the provided ID
+    const product = await TR_Product_Registration.findOne({
+      where: { id },
+      include: [
+        { model: MS_CustomerModel, as: "customer", attributes: ["comp_name"] },
+        { model: MS_Product, as: "prodId", attributes: ["prod_name"] }, // Eager load MS_Product with alias "prodId"
+        { model: MS_Grade },
+      ],
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const createProduct = async (req, res) => {
+  const {
+    comp_name, // Change this to comp_name instead of cust_name
+    prod_name,
+    gradeId,
+    No_of_casting_in_mould,
+    Casting_Weight,
+  } = req.body;
+
+  try {
+    // Find the customer based on the provided comp_name
+    const customer = await Customers.findOne({ where: { comp_name } });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    // Find or create the product based on the provided product name
+    let product = await MS_Product.findOne({
+      where: { prod_name, compId: customer.compId },
+    });
+
+    // If the product does not exist, create it
+    if (!product) {
+      product = await MS_Product.create({
+        compId: customer.compId,
+        prod_name,
+        userId: req.user.id,
+      });
+    }
+
+    // Create the TR_Product_Registration record with correct foreign keys
+    const newProductRegistration = await TR_Product_Registration.create({
+      compId: customer.compId,
+      prodId: product.PK_ProductID,
+      gradeId,
+      No_of_casting_in_mould,
+      Casting_Weight,
+      userId: req.user.id, // Store the user ID from authentication middleware if needed
+    });
+
+    res.status(201).json({
+      message: "Product created successfully",
+      productRegistration: newProductRegistration,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const { prod_name, gradeId, No_of_casting_in_mould, Casting_Weight } = req.body;
+
+  try {
+    // Find the product based on the provided ID
+    const product = await TR_Product_Registration.findOne({ where: { id } });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Update the TR_Product_Registration record
+    await product.update({
+      gradeId,
+      No_of_casting_in_mould,
+      Casting_Weight,
+    });
+
+    // Find the associated MS_Product record and update its prod_name
+    const msProduct = await MS_Product.findOne({ where: { PK_ProductID: product.prodId } });
+    if (!msProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    await msProduct.update({ prod_name });
+
+    res.json({ message: "Product updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteProduct = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the product based on the provided ID
+    const product = await TR_Product_Registration.findOne({ where: { id } });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Delete the product
+    await product.destroy();
+
+    res.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+

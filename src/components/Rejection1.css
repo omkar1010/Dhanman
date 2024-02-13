@@ -1,0 +1,122 @@
+/* .button is-success{
+    width:40px;
+} */
+
+
+.dropdown-input{
+     border: 0.3px solid rgb(102, 100, 100);
+    width: 90%;
+    margin: 1vh;
+    height: 6vh; 
+    
+    
+}
+
+.dropdown-label{
+  color: #525252;
+font-family: Inter;
+font-size: 16px;
+font-style: normal;
+font-weight: 600;
+line-height: normal;
+}
+
+
+.dropdown-input::placeholder{
+    text-align: center;
+    font-size: 14px;
+}
+
+.dropdown-input:focus{
+    outline: none; /* Remove the default outline */
+    border: 1px solid #48c78e; /* Set the blue border when in focus */
+    box-shadow: 0 0 0.5px rgb(8, 8, 212); /* Optional: Add a box shadow for extra emphasis */
+    
+}
+
+
+  .right-side-div{
+    /* border: 1px solid ; */
+    width:50%;
+    display:inline-block; 
+    background-color: rgb(202, 255, 240);
+    height: 100%;
+
+
+    
+  }
+
+
+  .left-side-div{
+    /* border:1px solid red; */
+    width:50%;
+    display:inline-block; 
+    background-color: rgb(202, 255, 240);
+height: 100%;
+
+  }
+
+  .dropdown-content{
+    background-color: rgb(202, 255, 240); 
+    padding: 0px;
+    margin: 0px;
+  }
+
+  .control{
+    background-color: rgb(202, 255, 240); 
+  }
+
+  .button is-fullwidth is-primary{
+    margin-top: 20px;
+  }
+
+    #r1-rejection-button{
+      margin-top: 10px;
+    background-color:#96FFE2;
+    }
+
+  
+
+  .custom-input {
+    position: relative;
+  }
+  
+  .custom-input input {
+    padding-left: 30px; /* Adjust this value to leave enough space for the icon */
+    width: 400px;
+    display: flex;
+  }
+  
+  .date-icon {
+    position: absolute;
+    top: 50%;
+    left: 10px; /* Adjust this value to control the icon's position */
+    transform: translateY(-50%);
+    font-size: 16px;
+    cursor: pointer;
+    color: #000; /* Replace with the desired color for the icon */
+  }
+
+
+  .clicked-button {
+    background-color: red; /* Replace 'red' with your desired color */
+    /* Add any other style changes you want when the button is clicked */
+  }
+
+
+
+  .customer-heading-input{
+    color: #4C4B4B;
+font-feature-settings: 'clig' off, 'liga' off;
+font-family: Inter;
+font-size: 18.075px;
+font-style: normal;
+font-weight: 600;
+line-height: 27.112px; /* 150% */
+letter-spacing: -0.565px;
+  }
+
+
+  #r1-rejection-button.is-primary {
+    background-color: #48c78e;
+  }

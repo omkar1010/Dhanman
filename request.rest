@@ -1,0 +1,379 @@
+// Create Role
+POST http://localhost:5000/users
+Content-Type: application/json
+
+{
+    "name": "Schedule",
+    "email": "shedule@gmail.com",
+    "password": "schedule@12",
+    "confPassword": "schedule@12",
+    "role": "schedule"
+}
+
+###
+// get all users
+GET http://localhost:5000/users
+
+###
+// get single user
+GET http://localhost:5000/users/4693acfe-4715-48c0-9977-e703e7878134
+
+
+
+###
+// update user
+PATCH  http://localhost:5000/users/83ebcda7-bac5-4e8e-a1cd-aaf4a45164d7
+Content-Type: application/json
+
+{
+    "name": "Dispatch Manager",
+    "email": "dispatch@gmail.com",
+    "password": "",
+    "confPassword": "",
+    "role": "dispatch"
+}
+
+
+###
+// Login admin 
+POST http://localhost:5000/login
+Content-Type: application/json
+
+{
+    "email": "admin@gmail.com",
+    "password": "admin@12"
+}
+
+###
+// Login User 
+POST http://localhost:5000/login
+Content-Type: application/json
+
+{
+    "email": "dispatch@gmail.com",
+    "password": "dispatch@12"
+}
+
+###
+GET http://localhost:5000/me
+
+###
+DELETE http://localhost:5000/logout
+
+###
+//get all customers
+GET http://localhost:5000/customers
+
+
+###
+// get single customer
+GET http://localhost:5000/customers/3b88debe-5611-481f-af07-da231194917a
+
+
+###
+// Create a Customer
+POST http://localhost:5000/customers
+Content-Type: application/json
+
+{
+  "cust_name": "Patrik",
+  "comp_name": "Company",
+  "comp_add": "Address Sample",
+  "gstn_number": "12AVGLF6190V5C4",
+  "cont_num": "+910079453709"
+}
+
+###
+
+###
+//update data
+
+
+
+
+PATCH  http://localhost:5000/customers/36
+Content-Type: application/json
+
+{
+    "cust_name": "Pratik Ghaware", 
+    "comp_name": "Computer Forest", 
+    "comp_add": "Denmark", 
+    "gstn_number": "23AVGLF6190V5C4", 
+    "cont_num": "+919930791350"
+}
+
+
+###
+POST http://localhost:5000/products
+Content-Type: application/json
+
+{
+  "compId": 1,
+  "prod_name": "ABC",
+  "gradeId": 3,
+  "No_of_casting_in_mould": 18,
+  "Casting_Weight": 80
+}
+
+###
+POST http://localhost:5000/products
+Content-Type: application/json
+
+{
+  "compId": ,
+  "prod_name": "Product Name", 
+  "gradeId": 1,  
+  "No_of_casting_in_mould": 100,
+  "Casting_Weight": 50
+}
+
+
+
+###
+GET http://localhost:5000/products
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Product
+### 
+POST http://localhost:5000/products
+Content-Type: application/json
+
+{
+ "comp_name": "Computer Forest",
+ "prod_name": "Product name forest",
+ "gradeId": 1,
+ "No_of_casting_in_mould": 2,
+ "Casting_Weight": 300
+}
+
+
+###
+GET http://localhost:5000/products/5
+
+
+
+
+###
+PATCH http://localhost:5000/products/5
+Content-Type: application/json
+
+{
+  "prod_name": "xyz",
+  "gradeId": 2,
+  "No_of_casting_in_mould": 20,
+  "Casting_Weight": 1201
+}
+  
+
+
+
+
+# Schedule Data test
+###
+POST http://localhost:5000/schedules
+Content-Type: application/json
+
+{
+  "compId": 8, 
+  "prodId": 5, 
+  "Schedule_Date": "2023-07-25",
+  "Shedule_Quantity": 200
+}
+
+
+###
+GET http://localhost:5000/grades
+
+
+
+###
+
+// for getting the rejection user
+GET http://localhost:5000/Rejections/22
+
+
+###
+GET http://localhost:5000/productions
+
+
+###
+// for creating the rejection
+POST http://localhost:5000/Rejections
+Content-Type: application/json
+
+{
+  "compId": 17,
+  "prodId": 11,
+  "rejec_Id": [1,2,5],
+  "Rejection_Date": "1999-02-05",
+  "Production_Quantity": 100,
+  "Rejection_Quantity": [5, 3]
+}
+
+
+###
+// get all the rejections
+GET http://localhost:5000/Rejections
+
+###
+// for the user logout 
+ DELETE http://localhost:5000/logout
+
+###
+//GET Rejection by rejecId
+GET http://localhost:5000/Rejections/22
+
+
+
+
+###
+//UPDATE Rejection by rejecId
+PUT http://localhost:5000/Rejections/8
+Content-Type: application/json
+
+
+{
+  "Rejection_Quantity": 66,
+  "Production_Quantity": 120,
+  "Rejection_Date": "2023-05-05", 
+  "compId": 19,
+  "prodId": 12
+}
+
+###
+//DELETE Rejection by rejecId
+DELETE http://localhost:5000/Rejections/13
+
+
+###
+GET http://localhost:5000/Rejectionsbyid/1
+
+
+
+
+
+
+
+
+
+
+
+****************************************here i created the routes for the r2rejection ************************************
+
+###
+// post for the r2 rejaction 
+
+POST http://localhost:5000/R2Rejections
+Content-Type: application/json
+
+{
+  "compId": 2,
+  "prodId": 4,
+  "rejecIds": [1,2,3,4,5,6],
+  "Rejection_Date": "2-05-2023",
+  "Production_Quantity": 100,
+  "Rejection_Quantity":[5,3,6,1,1,5]
+}
+
+
+###
+
+// for getting the rejection user
+GET http://localhost:5000/MSRejections
+
+
+
+###
+// update for the r2 rejection 
+PUT http://localhost:5000/R2Rejections/2
+Content-Type: application/json
+
+{
+ "Rejection_Date": "4-05-2023"
+}
+
+
+###
+DELETE http://localhost:5000/R2Rejections/1
+
+###
+GET http://localhost:5000/msproducts
+
+
+
+
+
+###
+GET http://localhost:5000/customers
+
+
+
+###
+GET http://localhost:5000/products
+
+
+###
+
+
+// this is all the routes for the productions 
+
+###
+GET http://localhost:5000/Productions
+
+
+
+########################################### R3 rejection #######################################################################
+
+
+###
+
+POST http://localhost:5000/R3Rejections
+Content-Type: application/json
+
+{
+  "compId": 19,
+  "prodId": 12,
+  "rejec_Id": 22,
+  "Rejection_Date": "1999-02-05",
+  "Rejection_Quantity":120
+}
+
+
+###
+// delete rejection 
+DELETE http://localhost:5000/R3Rejections/20
+
+
+###
+PUT http://localhost:5000/updateR3ejectionById/1
+Content-Type: application/json
+
+{
+  "Rejection_Date": "2023-09-15",
+  
+  "Rejection_Quantity": 100
+}
+
+
+
+###
+// get all r3 rejection 
+GET http://localhost:5000/R3Rejections
+                              
